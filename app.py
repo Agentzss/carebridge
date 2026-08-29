@@ -1,369 +1,182 @@
-from flask import Flask, render_template, request
+#!/usr/bin/env python3
+"""
+CareBridge Hospital Management System
+Flask Web Application
+"""
+
+from flask import Flask, render_template, request, redirect, url_for, flash
 from datetime import datetime, timedelta
-import calendar
-import os
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "carebridge-secret-key")
+app.secret_key = 'carebridge-2025-secret'
 
-# ==================== SETTINGS ====================
+# Constants
+BASE_FEE = 100.0
+LAB_RATE = 10.0
+DISCOUNT = 0.30
+MIN_DAYS = 7
 
-CONSULTATION_FEE = 100.00
-LAB_TEST_RATE = 10.00
-SUBSIDISED_DISCOUNT = 0.30
-MIN_APPOINTMENT_DAYS = 7
-
-TIME_SLOTS = [
-    "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM",
-    "02:00 PM", "02:30 PM", "03:00 PM", "03:30 PM", "04:00 PM"
-]
-
+# In-memory storage
 patients = []
 appointments = []
 
 
-# ==================== HELPERS ====================
-
-def find_patient(patient_id):
-    return next(
-        (p for p in patients if p["patient_id"] == patient_id),
-        None
-    )
+@app.route('/')
+def index():
+    return render_template('index.html',
+                           patient_count=len(patients),
+                           appt_count=len(appointments))
 
 
-def get_available_slots(date_iso):
-    booked = {
-        a["time_slot"]
-        for a in appointments
-        if a["date_iso"] == date_iso
-    }
-
-    return [slot for slot in TIME_SLOTS if slot not in booked]
-
-
-def generate_calendar(year, month):
-    today = datetime.now().date()
-    min_date = today + timedelta(days=MIN_APPOINTMENT_DAYS)
-
-    weeks = []
-
-    for week in calendar.Calendar().monthdayscalendar(year, month):
-        week_data = []
-
-        for day in week:
-            if day == 0:
-                week_data.append(None)
-                continue
-
-            date = datetime(year, month, day).date()
-            date_iso = date.strftime("%Y-%m-%d")
-            available = get_available_slots(date_iso)
-
-            week_data.append({
-                "day": day,
-                "date_iso": date_iso,
-                "date_display": date.strftime("%d/%m/%Y"),
-                "is_valid": date >= min_date,
-                "is_today": date == today,
-                "is_past": date < today,
-                "available_slots": available,
-                "booked_slots": [
-                    slot for slot in TIME_SLOTS
-                    if slot not in available
-                ],
-                "is_full": not available
-            })
-
-        weeks.append(week_data)
-
-    previous = datetime(year, month, 1) - timedelta(days=1)
-    next_month = datetime(year, month, 28) + timedelta(days=4)
-
-    return {
-        "weeks": weeks,
-        "month_name": calendar.month_name[month],
-        "year": year,
-        "prev_month": previous.month,
-        "prev_year": previous.year,
-        "next_month": next_month.month,
-        "next_year": next_month.year
-    }
-
-
-# ==================== HOME ====================
-
-@app.route("/")
-def home():
-    booked_patients = {a["patient_id"] for a in appointments}
-
-    return render_template(
-        "index.html",
-        patient_count=len(patients),
-        appt_count=len(appointments),
-        booked_patients=len(booked_patients)
-    )
-
-
-# ==================== PATIENTS ====================
-
-@app.route("/patients")
-def view_patients():
-    return render_template("patients.html", patients=patients)
-
-
-# ==================== REGISTER ====================
-
-@app.route("/register", methods=["GET", "POST"])
+@app.route('/register', methods=['GET', 'POST'])
 def register():
-    error = None
-    success = None
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        age_str = request.form.get('age', '').strip()
+        pid = request.form.get('patient_id', '').strip()
 
-    if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        age = request.form.get("age", "").strip()
-        patient_id = request.form.get("patient_id", "").strip()
-
+        errors = []
         if not name:
-            error = "Name cannot be blank."
+            errors.append('Name cannot be blank.')
+        try:
+            age = int(age_str)
+            if age <= 0:
+                errors.append('Age must be a positive number.')
+        except ValueError:
+            errors.append('Age must be a whole number.')
+        if not pid:
+            errors.append('Patient ID cannot be blank.')
 
-        elif not age:
-            error = "Age cannot be blank."
+        if errors:
+            for e in errors:
+                flash(e, 'danger')
+            return render_template('register.html', name=name, age=age_str, pid=pid)
 
-        else:
-            try:
-                age = int(age)
+        patients.append({
+            'name': name,
+            'age': age,
+            'id': pid,
+            'registered': datetime.now().strftime('%d %b %Y, %H:%M')
+        })
+        flash(f'Patient "{name}" registered successfully!', 'success')
+        return redirect(url_for('register'))
 
-                if age <= 0:
-                    error = "Age must be a positive number."
-
-            except ValueError:
-                error = "Age must be a whole number."
-
-        if not error and not patient_id:
-            error = "Patient ID cannot be blank."
-
-        if not error and find_patient(patient_id):
-            error = f"Patient ID '{patient_id}' already exists."
-
-        if not error:
-            patients.append({
-                "name": name,
-                "age": age,
-                "patient_id": patient_id,
-                "registered_at": datetime.now().strftime("%d/%m/%Y %H:%M")
-            })
-
-            success = f"Patient '{name}' registered successfully!"
-
-    return render_template(
-        "register.html",
-        error=error,
-        success=success
-    )
+    return render_template('register.html')
 
 
-# ==================== APPOINTMENTS ====================
+@app.route('/appointment', methods=['GET', 'POST'])
+def appointment():
+    min_date = (datetime.now() + timedelta(days=MIN_DAYS)).strftime('%Y-%m-%d')
 
-@app.route("/book", methods=["GET", "POST"])
-def book():
-    error = None
-    success = None
+    if request.method == 'POST':
+        dept = request.form.get('department', '').strip().upper()
+        date_str = request.form.get('appt_date', '').strip()
 
-    try:
-        year = int(request.args.get("year", datetime.now().year))
-        month = int(request.args.get("month", datetime.now().month))
+        errors = []
+        if dept not in ['GP', 'SPECIALIST']:
+            errors.append('Invalid department. Choose GP or Specialist.')
 
-        if month < 1 or month > 12:
-            raise ValueError
+        try:
+            appt_date = datetime.strptime(date_str, '%Y-%m-%d')
+            cutoff = datetime.now() + timedelta(days=MIN_DAYS)
+            if appt_date.date() <= cutoff.date():
+                errors.append(f'Date must be more than {MIN_DAYS} days from today.')
+        except ValueError:
+            errors.append('Invalid date format. Use YYYY-MM-DD.')
 
-    except ValueError:
-        year = datetime.now().year
-        month = datetime.now().month
+        if errors:
+            for e in errors:
+                flash(e, 'danger')
+            return render_template('appointment.html', min_date=min_date,
+                                   dept=dept, date_str=date_str)
 
-    if request.method == "POST":
-        patient_id = request.form.get("patient_id", "").strip()
-        department = request.form.get("department", "").strip().upper()
-        date_iso = request.form.get("date_iso", "").strip()
-        time_slot = request.form.get("time_slot", "").strip()
+        appointments.append({
+            'department': dept,
+            'date': date_str,
+            'booked': datetime.now().strftime('%d %b %Y, %H:%M')
+        })
+        flash(f'Appointment booked for {dept} on {date_str}.', 'success')
+        return redirect(url_for('appointment'))
 
-        patient = find_patient(patient_id)
-
-        if not patient:
-            error = "Please select a valid patient."
-
-        elif department not in ["GP", "SPECIALIST"]:
-            error = "Please select a valid department."
-
-        elif time_slot not in TIME_SLOTS:
-            error = "Please select a valid time slot."
-
-        else:
-            try:
-                appointment_date = datetime.strptime(
-                    date_iso, "%Y-%m-%d"
-                ).date()
-
-                minimum_date = (
-                    datetime.now().date()
-                    + timedelta(days=MIN_APPOINTMENT_DAYS)
-                )
-
-                if appointment_date < minimum_date:
-                    error = (
-                        f"Appointments must be at least "
-                        f"{MIN_APPOINTMENT_DAYS} days in advance."
-                    )
-
-            except ValueError:
-                error = "Invalid appointment date."
-
-        if not error:
-            available_slots = get_available_slots(date_iso)
-
-            if time_slot not in available_slots:
-                error = "That time slot is already booked."
-
-        if not error:
-            appointments.append({
-                "patient_id": patient_id,
-                "patient_name": patient["name"],
-                "department": department,
-                "date_iso": date_iso,
-                "date_display": appointment_date.strftime("%d/%m/%Y"),
-                "time_slot": time_slot,
-                "booked_at": datetime.now().strftime("%d/%m/%Y %H:%M")
-            })
-
-            success = (
-                f"Appointment booked for {patient['name']} "
-                f"on {appointment_date.strftime('%d/%m/%Y')} "
-                f"at {time_slot}."
-            )
-
-    return render_template(
-        "appointment.html",
-        error=error,
-        success=success,
-        patients=patients,
-        time_slots=TIME_SLOTS,
-        **generate_calendar(year, month)
-    )
+    return render_template('appointment.html', min_date=min_date)
 
 
-# ==================== BILLING ====================
-
-@app.route("/bill", methods=["GET", "POST"])
+@app.route('/bill', methods=['GET', 'POST'])
 def bill():
-    error = None
     result = None
+    if request.method == 'POST':
+        ptype = request.form.get('patient_type', '').strip().capitalize()
+        tests_str = request.form.get('num_tests', '').strip()
 
-    if request.method == "POST":
-        patient_type = request.form.get(
-            "patient_type", ""
-        ).strip().upper()
+        errors = []
+        if ptype not in ['Subsidised', 'Private']:
+            errors.append('Invalid type. Choose Subsidised or Private.')
+        try:
+            num_tests = int(tests_str)
+            if num_tests < 0:
+                errors.append('Number of tests cannot be negative.')
+        except ValueError:
+            errors.append('Number of tests must be a whole number.')
 
-        tests = request.form.get("num_tests", "").strip()
-
-        if patient_type not in ["SUBSIDISED", "PRIVATE"]:
-            error = "Please select a valid patient type."
-
+        if errors:
+            for e in errors:
+                flash(e, 'danger')
         else:
-            try:
-                tests = int(tests)
-
-                if tests < 0:
-                    error = "Number of tests cannot be negative."
-
-            except ValueError:
-                error = "Number of tests must be a whole number."
-
-        if not error:
-            lab_cost = tests * LAB_TEST_RATE
-            subtotal = CONSULTATION_FEE + lab_cost
-
-            discount = (
-                subtotal * SUBSIDISED_DISCOUNT
-                if patient_type == "SUBSIDISED"
-                else 0
-            )
-
-            total = subtotal - discount
+            subtotal = BASE_FEE + (num_tests * LAB_RATE)
+            if ptype == 'Subsidised':
+                total = subtotal * (1 - DISCOUNT)
+                discount_amt = subtotal * DISCOUNT
+            else:
+                total = subtotal
+                discount_amt = 0
 
             result = {
-                "type": patient_type.title(),
-                "base_fee": CONSULTATION_FEE,
-                "lab_cost": lab_cost,
-                "num_tests": tests,
-                "subtotal": subtotal,
-                "discount": discount,
-                "total": total
+                'type': ptype,
+                'tests': num_tests,
+                'base': BASE_FEE,
+                'lab_cost': num_tests * LAB_RATE,
+                'subtotal': subtotal,
+                'discount': discount_amt,
+                'total': total
             }
 
-    return render_template(
-        "bill.html",
-        error=error,
-        result=result
-    )
+    return render_template('bill.html', result=result)
 
 
-# ==================== TRIAGE ====================
-
-@app.route("/triage", methods=["GET", "POST"])
+@app.route('/triage', methods=['GET', 'POST'])
 def triage():
-    error = None
     result = None
+    if request.method == 'POST':
+        sev_str = request.form.get('severity', '').strip()
 
-    if request.method == "POST":
+        errors = []
         try:
-            severity = int(
-                request.form.get("severity", "").strip()
-            )
-
+            severity = int(sev_str)
             if severity < 1 or severity > 10:
-                error = "Severity must be between 1 and 10."
-
-            elif severity <= 4:
-                result = {
-                    "severity": severity,
-                    "room": "Waiting Room",
-                    "room_class": "waiting",
-                    "room_icon": "🛋️",
-                    "desc": "Non-urgent case. Monitor and reassess as needed."
-                }
-
-            elif severity <= 7:
-                result = {
-                    "severity": severity,
-                    "room": "Room 1",
-                    "room_class": "room1",
-                    "room_icon": "🚪",
-                    "desc": "Moderate urgency. Requires prompt attention."
-                }
-
-            else:
-                result = {
-                    "severity": severity,
-                    "room": "Room 2",
-                    "room_class": "room2",
-                    "room_icon": "🚨",
-                    "desc": "Critical condition. Immediate emergency care required."
-                }
-
+                errors.append('Severity must be between 1 and 10.')
         except ValueError:
-            error = "Severity must be a whole number."
+            errors.append('Severity must be a whole number between 1 and 10.')
 
-    return render_template(
-        "triage.html",
-        error=error,
-        result=result
-    )
+        if errors:
+            for e in errors:
+                flash(e, 'danger')
+        else:
+            if 1 <= severity <= 4:
+                room, priority, color = 'Waiting Room', 'Low', '#28a745'
+            elif 5 <= severity <= 7:
+                room, priority, color = 'Room 1', 'Medium', '#fd7e14'
+            else:
+                room, priority, color = 'Room 2', 'High', '#dc3545'
+
+            result = {
+                'severity': severity,
+                'room': room,
+                'priority': priority,
+                'color': color
+            }
+
+    return render_template('triage.html', result=result)
 
 
-# ==================== RUN ====================
-
-if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=5000,
-        debug=True
-    )
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
