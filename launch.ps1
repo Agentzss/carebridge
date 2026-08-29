@@ -106,8 +106,21 @@ function Start-Ngrok {
     Write-Host ""
     Start-Sleep -Seconds 1
 
+    # Detect ngrok executable name
+    $ngrokPath = $null
+    if (Test-Path ".\ngrok.exe") {
+        $ngrokPath = ".\ngrok.exe"
+    } elseif (Test-Path ".\ngrok") {
+        $ngrokPath = ".\ngrok"
+    } else {
+        Write-Host "    ❌ ngrok not found in current folder!" -ForegroundColor Red
+        Write-Host "    Make sure ngrok.exe is in your carebridge_web folder." -ForegroundColor Yellow
+        Start-Sleep -Seconds 3
+        return
+    }
+
     # Start ngrok in a new PowerShell window
-    Start-Process powershell -ArgumentList "-NoExit", "-Command", "ngrok http 5000"
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", "$ngrokPath http 5000"
 
     Write-Host "    ✅ ngrok started in a new window!" -ForegroundColor Green
     Write-Host "    📱 Copy the https:// URL and test on your phone." -ForegroundColor Cyan
@@ -142,7 +155,7 @@ function Stop-Everything {
     docker stop carebridge 2>$null | Out-Null
     docker rm carebridge 2>$null | Out-Null
     Write-Host "    ✅ Docker container stopped and removed." -ForegroundColor Green
-    Write-Host "    ⚠️  Close the ngrok window manually if it's still open." -ForegroundColor Yellow
+    Write-Host "    ⚠️  Close the ngrok window manually if it is still open." -ForegroundColor Yellow
     Start-Sleep -Seconds 2
 }
 
