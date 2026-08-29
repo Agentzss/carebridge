@@ -9,7 +9,6 @@
             --primary: #0d7377;
             --primary-dark: #095c5f;
             --secondary: #14a085;
-            --accent: #32e0c4;
             --bg: #f4f7f9;
             --card: #ffffff;
             --text: #2c3e50;
@@ -27,12 +26,11 @@
             color: var(--text);
             min-height: 100vh;
         }
-        /* Top Navigation */
         .navbar {
             background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
-            padding: 0 30px;
-            height: 64px;
+            padding: 0 24px;
+            height: 56px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -42,25 +40,24 @@
             z-index: 100;
         }
         .navbar-brand {
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             text-decoration: none;
             color: white;
         }
-        .navbar-brand span { font-size: 1.6rem; }
         .nav-links {
             display: flex;
-            gap: 6px;
+            gap: 4px;
         }
         .nav-links a {
-            color: rgba(255,255,255,0.9);
+            color: rgba(255,255,255,0.85);
             text-decoration: none;
-            padding: 8px 16px;
+            padding: 6px 14px;
             border-radius: 8px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 500;
             transition: all 0.2s;
         }
@@ -68,21 +65,11 @@
             background: rgba(255,255,255,0.15);
             color: white;
         }
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-        /* Layout */
         .container {
             max-width: 900px;
             margin: 0 auto;
             padding: 30px 20px;
         }
-        /* Cards */
         .card {
             background: var(--card);
             border-radius: var(--radius);
@@ -99,13 +86,10 @@
             border-bottom: 2px solid #eef2f7;
         }
         .card-header h2 {
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             color: var(--primary-dark);
         }
-        .card-header .icon {
-            font-size: 1.8rem;
-        }
-        /* Forms */
+        .card-header .icon { font-size: 1.6rem; }
         .form-group {
             margin-bottom: 22px;
         }
@@ -139,7 +123,6 @@
             color: var(--text-light);
             margin-top: 6px;
         }
-        /* Buttons */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -154,13 +137,12 @@
             cursor: pointer;
             transition: all 0.2s;
             box-shadow: 0 4px 15px rgba(13,115,119,0.3);
+            text-decoration: none;
         }
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(13,115,119,0.4);
         }
-        .btn:active { transform: translateY(0); }
-        /* Alerts */
         .alert {
             padding: 14px 18px;
             border-radius: 10px;
@@ -185,7 +167,6 @@
             color: #27ae60;
             border-left: 4px solid var(--success);
         }
-        /* Result Box */
         .result-box {
             background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%);
             border-radius: var(--radius);
@@ -217,7 +198,6 @@
             color: var(--primary);
             font-weight: 700;
         }
-        /* Triage Badge */
         .triage-badge {
             display: inline-block;
             padding: 6px 16px;
@@ -227,7 +207,6 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        /* Scale bar */
         .scale-bar {
             display: flex;
             gap: 4px;
@@ -248,18 +227,15 @@
             color: var(--text-light);
             margin-bottom: 20px;
         }
-        /* Footer */
         .footer {
             text-align: center;
             padding: 30px;
             color: var(--text-light);
             font-size: 0.85rem;
         }
-        /* Responsive */
         @media (max-width: 640px) {
-            .nav-links { display: none; }
-            .mobile-menu-btn { display: block; }
             .navbar { padding: 0 16px; }
+            .nav-links a { padding: 6px 10px; font-size: 0.8rem; }
             .card { padding: 20px; }
             .container { padding: 16px; }
         }
@@ -267,9 +243,8 @@
 </head>
 <body>
     <nav class="navbar">
-        <a href="/" class="navbar-brand"><span>🏥</span> CareBridge Hospital</a>
+        <a href="/" class="navbar-brand"><span>🏥</span> CareBridge</a>
         <div class="nav-links">
-            <a href="/" class="{% if request.path == '/' %}active{% endif %}">Dashboard</a>
             <a href="/register" class="{% if request.path == '/register' %}active{% endif %}">Register</a>
             <a href="/appointment" class="{% if request.path == '/appointment' %}active{% endif %}">Appointment</a>
             <a href="/bill" class="{% if request.path == '/bill' %}active{% endif %}">Bill</a>
