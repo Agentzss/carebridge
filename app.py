@@ -44,8 +44,10 @@ def register():
                 errors.append('Age must be a positive number.')
         except ValueError:
             errors.append('Age must be a whole number.')
-        if not pid:
-            errors.append('Patient ID cannot be blank.')
+    if not pid:
+    errors.append('Patient ID cannot be blank.')
+elif any(patient['id'] == pid for patient in patients):
+    errors.append('Patient ID already exists. Please use a different ID.')
 
         if errors:
             for e in errors:
