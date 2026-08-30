@@ -26,7 +26,9 @@
     <form method="POST" action="/triage">
         <div class="form-group">
             <label>Severity Level (1 – 10) <span class="required">*</span></label>
-            <input type="number" name="severity" min="1" max="10" placeholder="e.g. 7" required>
+            <input type="number" name="severity" min="1" max="10"
+       value="{{ request.form.get('severity', '') }}"
+       placeholder="e.g. 7" required>
             <div class="hint">Enter a whole number from 1 (low) to 10 (critical).</div>
         </div>
 
