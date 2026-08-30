@@ -21,7 +21,10 @@
         <div class="form-group">
             <label>Preferred Date <span class="required">*</span></label>
             <input type="date" name="appt_date" value="{{ date_str or '' }}" min="{{ min_date }}" required>
-            <div class="hint">Appointment must be at least 7 days from today (after {{ min_date }}).</div>
+            <div class="hint">
+    📌 Please select an appointment date at least 7 days from today.
+    The earliest available date is {{ min_date }}.
+</div>
         </div>
 
         <button type="submit" class="btn">Confirm Booking</button>
