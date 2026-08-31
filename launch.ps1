@@ -28,15 +28,16 @@ function Show-Menu {
     Write-Host "    ┌─────────────────────────────────────────────────────────────┐"
     Write-Host "    │  1.  Start Docker Container                                 │"
     Write-Host "    │  2.  Stop Docker Container                                  │"
-    Write-Host "    │  3.  Rebuild Docker Image                                   │"
-    Write-Host "    │  4.  Start ngrok (Public URL)                               │"
-    Write-Host "    │  5.  Open Browser - Dashboard                               │"
-    Write-Host "    │  6.  Open Browser - Register Patient                        │"
-    Write-Host "    │  7.  Open Browser - Book Appointment                        │"
-    Write-Host "    │  8.  Open Browser - Calculate Bill                          │"
-    Write-Host "    │  9.  Open Browser - Triage Room                             │"
-    Write-Host "    │  10. Show Docker Status                                     │"
-    Write-Host "    │  11. Stop Everything (Docker + ngrok)                       │"
+    Write-Host "    │  3.  Restart Docker Container                               │"
+    Write-Host "    │  4.  Rebuild Docker Image                                   │"
+    Write-Host "    │  5.  Start ngrok (Public URL)                               │"
+    Write-Host "    │  6.  Open Browser - Dashboard                               │"
+    Write-Host "    │  7.  Open Browser - Register Patient                        │"
+    Write-Host "    │  8.  Open Browser - Book Appointment                        │"
+    Write-Host "    │  9.  Open Browser - Calculate Bill                          │"
+    Write-Host "    │  10.  Open Browser - Triage Room                             │"
+    Write-Host "    │  11. Show Docker Status                                     │"
+    Write-Host "    │  12. Stop Everything (Docker + ngrok)                       │"
     Write-Host "    │  0.  Exit                                                   │"
     Write-Host "    └─────────────────────────────────────────────────────────────┘"
     Write-Host ""
@@ -78,6 +79,28 @@ function Stop-DockerContainer {
     Write-Host "    Stopping Docker container..." -ForegroundColor Yellow
     docker stop carebridge 2>$null | Out-Null
     Write-Host "    ✅ Container stopped." -ForegroundColor Green
+    Start-Sleep -Seconds 2
+}
+
+# ⬇️ PUT THE NEW FUNCTION HERE
+
+function Restart-DockerContainer {
+    Write-Host ""
+    Write-Host "    Restarting Docker container..." -ForegroundColor Yellow
+
+    docker restart carebridge 2>$null | Out-Null
+
+    Start-Sleep -Seconds 3
+
+    $running = docker ps --filter "name=carebridge" --format "{{.Names}}" 2>$null
+
+    if ($running -eq "carebridge") {
+        Write-Host "    ✅ Container restarted successfully!" -ForegroundColor Green
+        Write-Host "    🌐 Open http://localhost:5000 in your browser" -ForegroundColor Cyan
+    } else {
+        Write-Host "    ❌ Failed to restart container." -ForegroundColor Red
+    }
+
     Start-Sleep -Seconds 2
 }
 
