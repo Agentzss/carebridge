@@ -385,11 +385,12 @@ def triage():
                 color = '#dc3545'
 
             result = {
-                'severity': severity,
-                'room': room,
-                'priority': priority,
-                'color': color
-            }
+    'severity': severity,
+    'room': room,
+    'priority': priority,
+    'color': color,
+    'assessed_at': datetime.now().strftime('%d %b %Y, %H:%M')
+}
 
     return render_template(
         'triage.html',
