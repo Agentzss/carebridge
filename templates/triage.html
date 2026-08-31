@@ -24,17 +24,55 @@
     </div>
 
     <form method="POST" action="/triage">
-        <div class="form-group">
-            <label>Severity Level (1 – 10) <span class="required">*</span></label>
-            <input type="number" name="severity" min="1" max="10"
-       value="{{ request.form.get('severity', '') }}"
-       placeholder="e.g. 7" required>
-            <div class="hint">Enter a whole number from 1 (low) to 10 (critical).</div>
+    <div class="form-group">
+        <label>
+            Severity Level (1 – 10)
+            <span class="required">*</span>
+        </label>
+
+        <input
+            type="number"
+            name="severity"
+            min="1"
+            max="10"
+            step="1"
+            value="{{ request.form.get('severity', '') }}"
+            placeholder="Enter severity level (1-10)"
+            required
+            oninput="validateSeverity(this)"
+        >
+
+        <div class="hint">
+            1–4: Low severity &nbsp; | &nbsp;
+            5–7: Moderate severity &nbsp; | &nbsp;
+            8–10: Critical severity
         </div>
 
-        <button type="submit" class="btn">Assign Room</button>
-    </form>
+        <div id="severity-warning"
+             style="display:none; color:#dc2626; font-size:0.85rem; margin-top:6px;">
+            Please enter a severity level between 1 and 10.
+        </div>
+    </div>
 
+    <button type="submit" class="btn">
+        Assign Room
+    </button>
+</form>
+
+<script>
+function validateSeverity(input) {
+    const warning = document.getElementById("severity-warning");
+    const value = Number(input.value);
+
+    if (value < 1 || value > 10) {
+        warning.style.display = "block";
+        input.setCustomValidity("Severity must be between 1 and 10.");
+    } else {
+        warning.style.display = "none";
+        input.setCustomValidity("");
+    }
+}
+</script>
     {% if result %}
     <div class="result-box" style="border-left: 4px solid {{ result.color }};">
         <div class="result-title" style="color: {{ result.color }};">🩺 Triage Summary</div>
