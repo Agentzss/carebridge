@@ -4,6 +4,9 @@ FROM python:3.12-alpine
 # Set working directory inside container
 WORKDIR /app
 
+# Disable Python output buffering for better Docker logs
+ENV PYTHONUNBUFFERED=1
+
 # Copy requirements first (for Docker layer caching)
 COPY requirements.txt .
 
