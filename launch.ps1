@@ -35,7 +35,7 @@ function Show-Menu {
     Write-Host "    │  7.  Open Browser - Register Patient                        │"
     Write-Host "    │  8.  Open Browser - Book Appointment                        │"
     Write-Host "    │  9.  Open Browser - Calculate Bill                          │"
-    Write-Host "    │  10.  Open Browser - Triage Room                             │"
+    Write-Host "    │  10. Open Browser - Triage Room                             │"
     Write-Host "    │  11. Show Docker Status                                     │"
     Write-Host "    │  12. Stop Everything (Docker + ngrok)                       │"
     Write-Host "    │  0.  Exit                                                   │"
