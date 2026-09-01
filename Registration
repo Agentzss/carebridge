@@ -1,0 +1,65 @@
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+
+    if request.method == 'POST':
+
+        name = request.form.get('name', '').strip().title()
+        age_str = request.form.get('age', '').strip()
+        pid = request.form.get('patient_id', '').strip().upper()
+
+        errors = []
+
+        # Validate name
+        if not name:
+            errors.append('Name cannot be blank.')
+
+        # Validate age
+        try:
+            age = int(age_str)
+
+            if age < 0 or age > 120:
+                errors.append('Age must be between 0 and 120.')
+
+        except ValueError:
+            errors.append('Age must be a whole number.')
+
+        # Validate Patient ID
+        if not pid:
+            errors.append('Patient ID cannot be blank.')
+
+        elif any(patient['id'] == pid for patient in patients):
+            errors.append(
+                'Patient ID already exists. Please use a different ID.'
+            )
+
+        # Show errors
+        if errors:
+
+            for error in errors:
+                flash(error, 'danger')
+
+            return render_template(
+                'register.html',
+                name=name,
+                age=age_str,
+                pid=pid
+            )
+
+        # Register patient
+        patients.append({
+            'name': name,
+            'age': age,
+            'id': pid,
+            'registered': datetime.now().strftime(
+                '%d %b %Y, %H:%M'
+            )
+        })
+
+        flash(
+            f'Patient "{name}" registered successfully!',
+            'success'
+        )
+
+        return redirect(url_for('register'))
+
+    return render_template('register.html')
